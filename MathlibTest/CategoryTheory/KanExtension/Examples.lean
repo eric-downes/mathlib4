@@ -4,6 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 -/
 import Mathlib.CategoryTheory.Functor.KanExtension.Basic
 import Mathlib.CategoryTheory.Functor.KanExtension.Pointwise
+import Mathlib.CategoryTheory.Functor.KanExtension.Preserves
 import Mathlib.CategoryTheory.Comma.StructuredArrow.Basic
 import Mathlib.CategoryTheory.Limits.Shapes.Products
 import Mathlib.CategoryTheory.Limits.Shapes.Equalizers
@@ -41,27 +42,27 @@ section FreeConstructions
 variable {C : Type u} [Category.{v} C]
 
 /-- The forgetful functor from monoids -/
-def forget : MonCat.{u} ⥤ Type u := MonCat.forget _
+abbrev forgetMon : MonCat.{u} ⥤ Type u := forget MonCat.{u}
 
 /-- Test that free constructions are Kan extensions of the identity -/
-example (F : MonCat.{u} ⥤ Type u) [HasColimits.{u} (Type u)] : F.HasLeftKanExtension F := by
+example [HasColimits.{u} (Type u)] : forgetMon.HasLeftKanExtension forgetMon := by
   -- The free monoid functor is the left Kan extension of identity along forget.
   -- For each set S, the comma category (forget ↓ S) consists of monoids M
   -- with functions f : M → S. The colimit of this diagram is the free monoid on S.
   sorry
 
 /-- Characterization of free monoid via comma categories -/
-example (F : MonCat.{u} ⥤ Type u) (S : Type u) [HasColimits.{u} (Type u)] [F.HasPointwiseLeftKanExtension F] :
-    (F.pointwiseLeftKanExtension F).obj S ≅
-    colimit (CostructuredArrow.proj F S ⋙ F) := by
+noncomputable example (S : Type u) [HasColimits.{u} (Type u)] [forgetMon.HasPointwiseLeftKanExtension forgetMon] :
+    (forgetMon.pointwiseLeftKanExtension forgetMon).obj S ≅
+    colimit (CostructuredArrow.proj forgetMon S ⋙ forgetMon) := by
   -- This is the pointwise formula
   apply IsColimit.coconePointUniqueUpToIso
-  · exact (F.pointwiseLeftKanExtension F |> (F.pointwiseLeftKanExtensionUnit F).toLeftExtension).IsPointwiseLeftKanExtensionAt S
+  · exact pointwiseLeftKanExtensionIsPointwiseLeftKanExtension forgetMon forgetMon S
   · exact colimit.isColimit _
 
 /-- The unit of the free-forgetful adjunction via Kan extensions -/
-example (F : MonCat.{u} ⥤ Type u) [HasColimits.{u} (Type u)] [F.HasLeftKanExtension F] (S : Type u) :
-    F.obj S ⟶ ((F.leftKanExtension F).obj S) := by
+example [HasColimits.{u} (Type u)] [forgetMon.HasLeftKanExtension forgetMon] (S : Type u) :
+    S ⟶ forgetMon.obj ((forgetMon.leftKanExtension forgetMon).obj S) := by
   sorry -- Would need proper setup of free-forgetful adjunction
 
 end FreeConstructions
@@ -75,7 +76,7 @@ variable {C D : Type*} [Category C] [Category D]
 /-- Kan extensions along fully faithful functors -/
 example {K : C ⥤ D} [K.Full] [K.Faithful] {E : Type*} [Category E] (F : C ⥤ E)
     [K.HasLeftKanExtension F] :
-    (K.leftKanExtension F) ⋙ K ≅ F := by
+    K.leftKanExtension F ⋙ K ≅ F := by
   -- When K is fully faithful, for each c : C, the object (c, id : Kc → Kc)
   -- is initial in the comma category (K ↓ Kc). This makes the unit an isomorphism.
   refine (asIso (K.leftKanExtensionUnit F : F ⟶ K.leftKanExtension F ⋙ K))
@@ -122,13 +123,13 @@ instance : Category ThreeObj where
     | _, _, _, ThreeHom.id _, h => h
     | _, _, _, h, ThreeHom.id _ => h
     | _, _, _, ThreeHom.f, ThreeHom.g => ThreeHom.gf
-    | _, _, _, _, _ => ThreeHom.id c  -- Invalid compositions
-  id_comp := by intro X Y f; cases f <;> rfl
-  comp_id := by intro X Y f; cases f <;> rfl
-  assoc := by intro W X Y Z f g h; cases f <;> cases g <;> cases h <;> rfl
+    | _, _, c, _, _ => ThreeHom.id c  -- Invalid compositions
+  id_comp := by intro a b f; cases f <;> rfl
+  comp_id := by intro a b f; cases f <;> rfl
+  assoc := by intro a b c d f g h; cases f <;> cases g <;> cases h <;> rfl
 
-/-- Import WalkingPair from Basic.lean -/
-open MathlibTest.KanExtension (WalkingPair)
+-- Import WalkingPair from Basic.lean
+open MathlibTest.KanExtension in
 
 /-- A functor picking out two objects -/
 def pickXY : WalkingPair ⥤ ThreeObj where
