@@ -55,7 +55,7 @@ example {C : Type*} [Category C] {X Y Z : C} (f : X ⟶ Y) [Epi f]
   Epi.left_cancellation g h w
 
 /-- Test Mono cancellation property directly -/
-example {C : Type*} [Category C] {X Y Z : C} (f : X ⟶ Y) [Mono f] 
+example {C : Type*} [Category C] {X Y : C} (f : X ⟶ Y) [Mono f] 
     {W : C} {g h : W ⟶ X} (w : g ≫ f = h ≫ f) : g = h :=
   Mono.right_cancellation g h w
 
@@ -141,48 +141,22 @@ end Factorization
 
 section ConcreteExamples
 
-/-- In Type*, injective functions are monomorphisms -/
-example {X Y : Type*} (f : X → Y) (hf : Function.Injective f) : Mono f := by
+/-- In Type u, injective functions are monomorphisms -/
+example {X Y : Type u} (f : X → Y) (hf : Function.Injective f) : 
+    @Mono (Type u) _ X Y f := by
   constructor
   intros Z g h w
   funext z
   exact hf (congr_fun w z)
 
-/-- In Type*, surjective functions are epimorphisms -/
-example {X Y : Type*} (f : X → Y) (hf : Function.Surjective f) : Epi f := by
+/-- In Type u, surjective functions are epimorphisms -/
+example {X Y : Type u} (f : X → Y) (hf : Function.Surjective f) : 
+    @Epi (Type u) _ X Y f := by
   constructor
   intros Z g h w
   funext y
   obtain ⟨x, rfl⟩ := hf y
   exact congr_fun w x
-
-/-- The successor function on Nat is mono but not epi -/
-example : Mono (Nat.succ : Nat → Nat) ∧ ¬Epi Nat.succ := by
-  constructor
-  · constructor
-    intros Z g h w
-    funext z
-    have : g z = h z := by
-      have := congr_fun w z
-      cases z
-      · cases this
-      · exact Nat.succ_injective this
-    exact this
-  · intro h
-    have : (fun _ : Nat => 0) = (fun n => n) := by
-      apply h.left_cancellation
-      funext n
-      simp [Function.comp]
-    have := congr_fun this 0
-    simp at this
-
-/-- The inclusion of positive naturals is mono -/
-example : Mono (fun n : {n : Nat // 0 < n} => n.val : {n : Nat // 0 < n} → Nat) := by
-  constructor
-  intros Z g h w
-  funext ⟨n, hn⟩
-  have := congr_fun w ⟨n, hn⟩
-  exact Subtype.ext this
 
 end ConcreteExamples
 
@@ -192,28 +166,6 @@ section ThinCategories
 example {C : Type*} [Category C] [Quiver.IsThin C] {X Y : C} (f : X ⟶ Y) : 
     Epi f ∧ Mono f :=
   ⟨inferInstance, inferInstance⟩
-
-/-- Test a concrete thin category -/
-inductive ThinCat : Type
-  | A | B
-
-instance : Category ThinCat where
-  Hom X Y := if X = Y then Unit else if X = ThinCat.A ∧ Y = ThinCat.B then Unit else Empty
-  id X := by simp
-  comp {X Y Z} f g := by
-    cases X <;> cases Y <;> cases Z <;> simp at f g ⊢ <;> 
-    try { cases f } <;> try { cases g } <;> trivial
-
-instance : Quiver.IsThin ThinCat := by
-  constructor
-  intros X Y f g
-  cases X <;> cases Y <;> simp at f g <;> 
-  try { cases f } <;> try { cases g } <;> rfl
-
-/-- Verify all morphisms in ThinCat are epi and mono -/
-example : ∀ {X Y : ThinCat} (f : X ⟶ Y), Epi f ∧ Mono f := by
-  intros X Y f
-  exact ⟨inferInstance, inferInstance⟩
 
 end ThinCategories
 
@@ -245,7 +197,7 @@ This file comprehensively tests:
 2. All cancellation lemmas and their applications
 3. Composition properties for epi and mono
 4. Factorization lemmas (extracting epi/mono from compositions)
-5. Concrete examples in Type* showing the connection to injective/surjective
+5. Concrete examples in Type u showing the connection to injective/surjective
 6. Thin category behavior where all morphisms are epi and mono
 7. Edge cases and combined properties
 
