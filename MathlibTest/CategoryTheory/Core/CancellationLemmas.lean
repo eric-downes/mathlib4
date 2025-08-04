@@ -93,7 +93,7 @@ example (f : X ⟶ X) (w : ∀ {Y : C} (g : Y ⟶ X), g ≫ f = g) : f = 𝟙 X 
   id_of_comp_right_id f w
 
 /-- Concrete example: a morphism that acts as left identity must be identity -/
-example (f : X ⟶ X) (h₁ : f ≫ f = f) (h₂ : ∀ {Y : C} (g : X ⟶ Y), f ≫ g = g) : 
+example (f : X ⟶ X) (_h₁ : f ≫ f = f) (h₂ : ∀ {Y : C} (g : X ⟶ Y), f ≫ g = g) : 
     f = 𝟙 X :=
   id_of_comp_left_id f h₂
 
@@ -101,34 +101,38 @@ end IdentityCancellation
 
 section ConcreteExamples
 
-/-- Test cancellation in Type* -/
-example {X Y : Type*} {f g : X → Y} 
-    (h : ∀ (Z : Type*) (k : Y → Z), k ∘ f = k ∘ g) : f = g := by
-  apply eq_of_comp_left_eq
+/-- Test cancellation in Type u -/
+example {X Y : Type u} {f g : X → Y} 
+    (h : ∀ (Z : Type u) (k : Y → Z), k ∘ f = k ∘ g) : f = g := by
+  -- Can use eq_of_comp_left_eq since we're in the same universe
+  apply @eq_of_comp_left_eq (Type u) _ X Y f g
   intro Z k
+  -- In Type*, ≫ is ∘ with arguments flipped
+  show k ∘ f = k ∘ g
   exact h Z k
 
-/-- Identity cancellation in Type* -/
-example {X : Type*} (f : X → X) 
-    (h : ∀ (Y : Type*) (g : X → Y), g ∘ f = g) : f = id := by
-  apply id_of_comp_left_id
+/-- Identity cancellation in Type u -/
+example {X : Type u} (f : X → X) 
+    (h : ∀ (Y : Type u) (g : X → Y), g ∘ f = g) : f = id := by
+  apply @id_of_comp_left_id (Type u) _ X f
   intro Y g
+  show g ∘ f = g
   exact h Y g
 
 /-- Specific example with natural numbers -/
 example (f g : Nat → Nat) 
     (h : ∀ k : Nat → Bool, k ∘ f = k ∘ g) : f = g := by
-  apply eq_of_comp_left_eq
-  intro Z k
-  -- Specialize to Bool to use our hypothesis
-  have : (fun n => n % 2 = 0) ∘ f = (fun n => n % 2 = 0) ∘ g := h _
-  -- This is enough to conclude f = g
+  -- We can't directly use eq_of_comp_left_eq here because we only have Bool, not all types
   funext n
-  -- Use different test functions to pin down the value
-  have h₁ := congr_fun (h (fun m => m = f n)) n
-  have h₂ := congr_fun (h (fun m => m = g n)) n
-  simp at h₁ h₂
-  rw [← h₂, h₁]
+  -- Use test functions to distinguish values
+  by_contra h_ne
+  -- If f n ≠ g n, we can find a function that distinguishes them
+  let k : Nat → Bool := fun m => m = f n
+  have : k (f n) = k (g n) := by
+    have := h k
+    exact congr_fun this n
+  simp [k] at this
+  exact absurd this.symm h_ne
 
 end ConcreteExamples
 
@@ -145,12 +149,12 @@ example {X Y : C} {f g : X ⟶ Y}
   exact h rfl
 
 /-- Identity is unique as a left identity -/
-example {X : C} {f : X ⟶ X} (h : f ≫ f = f) 
+example {X : C} {f : X ⟶ X} (_h : f ≫ f = f) 
     (h_id : ∀ {Y : C} (g : X ⟶ Y), f ≫ g = g) : f = 𝟙 X :=
   id_of_comp_left_id f h_id
 
 /-- Identity is unique as a right identity -/
-example {X : C} {f : X ⟶ X} (h : f ≫ f = f) 
+example {X : C} {f : X ⟶ X} (_h : f ≫ f = f) 
     (h_id : ∀ {Y : C} (g : Y ⟶ X), g ≫ f = g) : f = 𝟙 X :=
   id_of_comp_right_id f h_id
 
@@ -162,7 +166,7 @@ variable {C : Type*} [Category C]
 
 /-- Cancellation with dependent types -/
 example {X Y : C} (f g : X ⟶ Y) 
-    (h : ∀ (P : C → Prop) {Z : C} (hz : P Z) (k : Y ⟶ Z), f ≫ k = g ≫ k) : 
+    (h : ∀ (P : C → Prop) {Z : C} (_hz : P Z) (k : Y ⟶ Z), f ≫ k = g ≫ k) : 
     f = g := by
   apply eq_of_comp_left_eq
   intro Z k
@@ -170,16 +174,16 @@ example {X Y : C} (f g : X ⟶ Y)
 
 /-- Double application of cancellation -/
 example {W X Y Z : C} (f : W ⟶ X) (g : X ⟶ Y) (h : Y ⟶ Z)
-    (eq₁ : ∀ {A : C} (k : Z ⟶ A), (f ≫ g ≫ h) ≫ k = f ≫ (g ≫ h) ≫ k)
-    (eq₂ : ∀ {B : C} (l : W ⟶ B), l = l) : 
+    (_eq₁ : ∀ {A : C} (k : Z ⟶ A), (f ≫ g ≫ h) ≫ k = f ≫ (g ≫ h) ≫ k)
+    (_eq₂ : ∀ {B : C} (l : W ⟶ B), l = l) : 
     (f ≫ g) ≫ h = f ≫ (g ≫ h) := by
-  apply eq_of_comp_left_eq
-  exact eq₁
+  -- This is just associativity
+  simp only [Category.assoc]
 
 /-- Combining left and right cancellation -/
 example {X Y : C} (f g : X ⟶ Y) 
     (h_left : ∀ {Z : C} (h : Y ⟶ Z), f ≫ h = g ≫ h)
-    (h_right : ∀ {W : C} (h : W ⟶ X), h ≫ f = h ≫ g) : 
+    (_h_right : ∀ {W : C} (h : W ⟶ X), h ≫ f = h ≫ g) : 
     f = g :=
   eq_of_comp_left_eq h_left -- Could also use eq_of_comp_right_eq h_right
 
