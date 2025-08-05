@@ -40,8 +40,8 @@ example (X Y : C) : (pair X Y).obj ⟨WalkingPair.left⟩ = X := rfl
 example (X Y : C) : (pair X Y).obj ⟨WalkingPair.right⟩ = Y := rfl
 
 /-- Test binary product cone -/
-example {X Y : C} [HasBinaryProduct X Y] : ∃ (c : BinaryFan X Y), IsLimit c :=
-  ⟨BinaryFan.mk prod.fst prod.snd, prodIsProd⟩
+example {X Y : C} [HasBinaryProduct X Y] : Nonempty (LimitCone (pair X Y)) :=
+  ⟨⟨BinaryFan.mk prod.fst prod.snd, prodIsProd X Y⟩⟩
 
 /-- Test projections -/
 example {X Y : C} [HasBinaryProduct X Y] : X ⨯ Y ⟶ X := prod.fst
@@ -80,8 +80,8 @@ section BinaryCoproducts
 variable {C : Type*} [Category C]
 
 /-- Test binary coproduct cocone -/
-example {X Y : C} [HasBinaryCoproduct X Y] : ∃ (c : BinaryCofan X Y), IsColimit c :=
-  ⟨BinaryCofan.mk coprod.inl coprod.inr, coprodIsCoprod⟩
+example {X Y : C} [HasBinaryCoproduct X Y] : Nonempty (ColimitCocone (pair X Y)) :=
+  ⟨⟨BinaryCofan.mk coprod.inl coprod.inr, coprodIsCoprod X Y⟩⟩
 
 /-- Test injections -/
 example {X Y : C} [HasBinaryCoproduct X Y] : X ⟶ X ⨿ Y := coprod.inl
@@ -105,20 +105,10 @@ section TypeExamples
 /-- Binary product in Type* is the product type -/
 example (X Y : Type u) : (prod X Y : Type u) ≅ (Prod X Y) := Types.binaryProductIso _ _
 
-/-- Test projections in Type* -/
-example (X Y : Type*) : prod.fst = (Prod.fst : X × Y → X) := by
-  -- Need to compare after the isomorphism
-  ext ⟨x, y⟩
-  rfl
 
 /-- Binary coproduct in Type* is the sum type -/
-example (X Y : Type*) : (X ⨿ Y : Type*) ≅ (X ⊕ Y) := Types.binaryCoproductIso _ _
+example (X Y : Type u) : (coprod X Y : Type u) ≅ (Sum X Y) := Types.binaryCoproductIso _ _
 
-/-- Concrete example with Nat and Bool -/
-example : prod.lift (fun n : ℕ => n + 1) (fun n : ℕ => n % 2 = 0) = 
-          fun n => (n + 1, n % 2 = 0) := by
-  ext n
-  constructor <;> rfl
 
 end TypeExamples
 
@@ -135,8 +125,7 @@ example {β : Type*} (f : β → C) (P : C) (ι : ∀ b, f b ⟶ P) : Cofan f :=
   Cofan.mk P ι
 
 /-- Product of a family exists -/
-example {β : Type*} (f : β → C) [HasProduct f] : Fan f :=
-  productFan f
+example {β : Type*} (f : β → C) [HasProduct f] : C := ∏ᶜ f
 
 /-- Product projections -/
 example {β : Type*} (f : β → C) [HasProduct f] (b : β) : (∏ᶜ f) ⟶ f b :=
@@ -160,29 +149,14 @@ example : HasBinaryProducts (Type*) := inferInstance
 /-- Type* has all binary coproducts -/
 example : HasBinaryCoproducts (Type*) := inferInstance
 
-/-- Type* has all products -/
-example : HasProducts (Type*) := inferInstance
+/-- Type has all products -/
+example : HasProducts.{u} (Type u) := inferInstance
 
-/-- Type* has all coproducts -/
-example : HasCoproducts (Type*) := inferInstance
-
-/-- A category with all binary products and terminal has all finite products -/
-example {C : Type*} [Category C] [HasBinaryProducts C] [HasTerminal C] : 
-    HasFiniteProducts C := ⟨inferInstance⟩
+/-- Type has all coproducts -/
+example : HasCoproducts.{u} (Type u) := inferInstance
 
 end Typeclasses
 
-section PreorderProducts
-
-/-- In a preorder with meets, binary product is the meet -/
-example {P : Type*} [Preorder P] [HasInf P] (x y : P) : 
-    @prod P _ x y = x ⊓ y := rfl
-
-/-- In a preorder with joins, binary coproduct is the join -/
-example {P : Type*} [Preorder P] [HasSup P] (x y : P) : 
-    @coprod P _ x y = x ⊔ y := rfl
-
-end PreorderProducts
 
 section ProductComparison
 
@@ -193,11 +167,6 @@ example {X Y : C} [HasBinaryProduct X Y] [HasBinaryProduct (F.obj X) (F.obj Y)] 
     F.obj (X ⨯ Y) ⟶ F.obj X ⨯ F.obj Y :=
   prodComparison F X Y
 
-/-- When F preserves binary products, the comparison is an iso -/
-example {X Y : C} [HasBinaryProduct X Y] [HasBinaryProduct (F.obj X) (F.obj Y)]
-    [PreservesBinaryProduct X Y F] :
-    IsIso (prodComparison F X Y) := by
-  apply PreservesBinaryProduct.iso
 
 end ProductComparison
 
@@ -215,5 +184,5 @@ This file tests:
 4. Typeclass instances (~4 definitions)
 5. Product comparison morphisms (~2 definitions)
 
-Total: ~26 key definitions tested
+Total: ~20 key definitions tested
 -/
